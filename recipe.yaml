@@ -1,0 +1,105 @@
+---
+RecipeFormatVersion: '2020-01-25'
+ComponentName: aws.greengrass.labs.dashboard.Grafana
+ComponentVersion: '1.0.0'
+ComponentDescription: 'A component that provisions and manages an Grafana instance.'
+ComponentPublisher: Amazon
+ComponentDependencies:
+    aws.greengrass.SecretManager:
+      VersionRequirement: ~2.1.0
+      DependencyType: HARD
+    aws.greengrass.DockerApplicationManager:
+      VersionRequirement: ~2.0.0
+      DependencyType: HARD
+ComponentConfiguration:
+  DefaultConfiguration:
+    AutoProvision: 'true'
+    SecretArn: 'arn:aws:secretsmanager:<region>:<account>:secret:<name>'
+    GrafanaMountPath: '/home/ggc_user/dashboard'
+    GrafanaContainerName: greengrass_Grafana
+    GrafanaInterface: '127.0.0.1'
+    GrafanaPort: '3000'
+    GrafanaDashboardArtifactPath: 'greengrass_grafana_dashboard'
+    BridgeNetworkName: 'greengrass-telemetry-bridge'
+    ServerProtocol: 'https'
+    GenerateSelfSignedCert: 'true'
+    HTTPSCertExpirationDays: '365'
+    accessControl:
+      aws.greengrass.SecretManager:
+        aws.greengrass.labs.dashboard.Grafana:secrets:1:
+          policyDescription: Allows access to the secret containing Grafana credentials.
+          operations:
+            - aws.greengrass#GetSecretValue
+          resources:
+            - 'arn:aws:secretsmanager:<region>:<account>:secret:<name>'
+Manifests:
+  - Platform:
+      os: /darwin|linux/
+    Lifecycle:
+      Install: 
+        RequiresPrivilege: true
+        script: |-
+          set -eu
+          docker network inspect {configuration:/BridgeNetworkName} > /dev/null 2>&1 || docker network create --driver bridge {configuration:/BridgeNetworkName}
+          
+           if [ "{configuration:/ServerProtocol}" = "https" ] && [ "{configuration:/GenerateSelfSignedCert}" = "true" ]; then
+            if [ ! -d "{configuration:/GrafanaMountPath}/grafana_certs" ]; then
+              echo "Creating self-signed certificate for HTTPS..."
+              mkdir -p {configuration:/GrafanaMountPath}/grafana_certs
+              openssl req -x509 -nodes -newkey rsa:2048 -batch \
+                -keyout {configuration:/GrafanaMountPath}/grafana_certs/grafana.key \
+                -out {configuration:/GrafanaMountPath}/grafana_certs/grafana.crt \
+                -days {configuration:/HTTPSCertExpirationDays}
+
+              echo "Setting file permissions for HTTPS certs..."
+              chmod -R 077 {configuration:/GrafanaMountPath}/grafana_certs
+            else
+              echo "Found existing certs for HTTPS, skipping creation..."
+            fi
+          fi
+
+          if [ ! -d "{configuration:/GrafanaMountPath}/grafana" ]; then
+            echo "Creating Grafana mount folder and setting file permissions..."
+            mkdir -p {configuration:/GrafanaMountPath}/grafana
+            #Change to allow Grafana access
+            chown -R 472:472 {configuration:/GrafanaMountPath}/grafana
+          fi
+
+          if [ "{configuration:/AutoProvision}" = "true" ] && [ ! -d {configuration:/GrafanaMountPath}/greengrass_grafana_secrets ]; then
+            echo "Creating Grafana secrets folder and setting file permissions..."
+            mkdir -p {configuration:/GrafanaMountPath}/greengrass_grafana_secrets
+            touch {configuration:/GrafanaMountPath}/greengrass_grafana_secrets/admin_password
+            touch {configuration:/GrafanaMountPath}/greengrass_grafana_secrets/admin_username
+            chown -R ggc_user:ggc_group {configuration:/GrafanaMountPath}/greengrass_grafana_secrets
+          fi
+      Run:
+        RequiresPrivilege: false
+        script: |-
+          set -eu
+          echo "Creating new Grafana container..."
+
+          bash {artifacts:decompressedPath}/aws-greengrass-labs-dashboard-grafana/src/run_grafana.sh \
+          {configuration:/AutoProvision} \
+          {artifacts:decompressedPath}/aws-greengrass-labs-dashboard-grafana/src/ \
+          {configuration:/GrafanaContainerName} \
+          {configuration:/GrafanaPort} \
+          {configuration:/BridgeNetworkName} \
+          {configuration:/GrafanaMountPath} \
+          {configuration:/SecretArn} \
+          {configuration:/ServerProtocol} \
+          {configuration:/GenerateSelfSignedCert} \
+          {configuration:/GrafanaInterface} 
+      Shutdown:
+        RequiresPrivilege: false
+        script: |-
+          echo "Stopping the Grafana container..."
+          docker stop {configuration:/GrafanaContainerName}
+          echo "Removing the Grafana container..."
+          docker rm {configuration:/GrafanaContainerName}
+    Artifacts:
+      - URI: 'docker:grafana/grafana:8.2.0' 
+      - URI: s3://aws-greengrass-labs-dashboard-grafana.zip
+        Unarchive: ZIP
+        Permission:
+          Read: ALL
+  
