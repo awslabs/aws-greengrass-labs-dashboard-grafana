@@ -7,6 +7,7 @@ datasources:
   - name: InfluxDB
     type: influxdb
     access: proxy
+    editable: false
     url: https://greengrass_influxDB:8086
     jsonData:
       version: Flux
@@ -16,7 +17,7 @@ datasources:
       tlsAuth: true
       serverName: https://greengrass_influxDB:8086
     secureJsonData:
-      token: $GREENGRASS_INFLUXDB_RW_TOKEN
+      token: $GREENGRASS_INFLUXDB_TOKEN
       tlsClientCert: |
         $TLS_CLIENT_CERT
       tlsClientKey: |

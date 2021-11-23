@@ -44,10 +44,7 @@ if [ "$AUTO_PROVISION" == "false" ]; then
 	--network=$BRIDGE_NETWORK \
 	--name $CONTAINER_NAME \
 	-v $GRAFANA_MOUNT_PATH/grafana:/var/lib/grafana \
-	-e GF_SERVER_PROTOCOL=https \
-  	-e GF_SERVER_CERT_FILE=/etc/ssl/certs/grafana.crt \
-  	-e GF_SERVER_CERT_KEY=/etc/ssl/certs/grafana.key \
-  	grafana/grafana:8.2.0
+  grafana/grafana:8.2.0
 
 
 # If auto-provisioning, provision the container with credentials
@@ -99,8 +96,8 @@ elif [ "$AUTO_PROVISION" == "true" ]; then
 		-e GF_SECURITY_ADMIN_PASSWORD__FILE=/var/lib/greengrass_grafana_secrets/admin_password \
 		-e GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/greengrass_grafana_dashboard/greengrass_grafana_dashboard.json \
 		-e GF_SERVER_PROTOCOL=https \
-	  	-e GF_SERVER_CERT_FILE=/var/lib/grafana/ssl/greengrass/grafana.crt \
-	  	-e GF_SERVER_CERT_KEY=/var/lib/grafana/ssl/greengrass/grafana.key \
+		-e GF_SERVER_CERT_FILE=/var/lib/grafana/ssl/greengrass/grafana.crt \
+		-e GF_SERVER_CERT_KEY=/var/lib/grafana/ssl/greengrass/grafana.key \
 		grafana/grafana:8.2.0
 
 	elif [ $SERVER_PROTOCOL == "http" ]; then

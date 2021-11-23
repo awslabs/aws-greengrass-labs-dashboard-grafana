@@ -7,10 +7,11 @@ datasources:
   - name: InfluxDB
     type: influxdb
     access: direct
+    editable: false
     url: http://greengrass_influxDB:8086
     jsonData:
       version: Flux
       organization: greengrass
       defaultBucket: greengrass-telemetry
     secureJsonData:
-      token: $GREENGRASS_INFLUXDB_RW_TOKEN
+      token: $GREENGRASS_INFLUXDB_TOKEN
