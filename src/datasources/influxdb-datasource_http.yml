@@ -1,0 +1,16 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    type: influxdb
+    access: direct
+    url: http://greengrass_influxDB:8086
+    jsonData:
+      version: Flux
+      organization: greengrass
+      defaultBucket: greengrass-telemetry
+    secureJsonData:
+      token: $GREENGRASS_INFLUXDB_RW_TOKEN

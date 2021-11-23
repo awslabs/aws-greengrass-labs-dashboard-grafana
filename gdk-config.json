@@ -1,0 +1,16 @@
+{
+  "component" :{
+    "aws.greengrass.labs.dashboard.Grafana": {
+      "author": "AWS IoT Greengrass",
+      "version": "LATEST", 
+      "build": {
+        "build_system": "zip"
+      },
+      "publish": {
+        "bucket": "<PLACEHOLDER BUCKET HERE>", 
+        "region": "<PLACEHOLDER BUCKET HERE>" 
+      }
+    }
+  },
+  "gdk_version": "1.0.0"
+}
