@@ -1,7 +1,7 @@
 ## Greengrass Labs Grafana Component - `aws.greengrass.labs.dashboard.Grafana`
 
 ## Overview
-This AWS IoT Greengrass component allows you to provision and manage a [Grafana instance](https://grafana.com/grafana/) on your device.
+This AWS IoT Greengrass component allows you to provision and manage a local [Grafana instance](https://grafana.com/grafana/) on your device.
 
 At a high level, the component will do the following:
 
@@ -27,7 +27,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
     * default: `true`
 
 
-* `SecretArn` - The ARN of the AWS Secret Manager secret containing your desired Grafana username/password.
+* `SecretArn` - The ARN of the AWS Secret Manager secret containing your desired Grafana username/password. You must configure and deploy this secret with the [Secret manager component](https://docs.aws.amazon.com/greengrass/v2/developerguide/secret-manager-component.html), and you must specify this secret in the `accessControl` configuration parameter to allow this component to use it.
     * (`string`)
     * default: `arn:aws:secretsmanager:<region>:<account>:secret:<name>`
 
@@ -78,6 +78,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 
 
 * `accessControl` - [Greengrass Access Control Policy](https://docs.aws.amazon.com/greengrass/v2/developerguide/interprocess-communication.html#ipc-authorization-policies), required for secret retrieval.
+  * A incomplete `accessControl` policy allowing secret retrieval has been included, which you will need to configure.
 
 ## Setup
 **The following steps are for Ubuntu 20.04 x86_64, but will be similar for most platforms.**
@@ -102,25 +103,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
       sudo apt-get install -y docker-ce docker-ce-cli containerd.io
    ```
 
-3. Setup AWS IoT Greengrass [according to the installation instructions](https://docs.aws.amazon.com/greengrass/v2/developerguide/quick-installation.html):
-   1. Download Greengrass:
-       ```
-       curl -s https://d2s8p88vqu9w66.cloudfront.net/releases/greengrass-nucleus-latest.zip > greengrass-nucleus-latest.zip && unzip greengrass-nucleus-latest.zip -d GreengrassInstaller && rm greengrass-nucleus-latest.zip
-       ```
-      2. Export your AWS credentials, then start Greengrass:
-        ```
-        sudo -E java -Droot="/greengrass/v2" -Dlog.store=FILE \
-          -jar ./GreengrassInstaller/lib/Greengrass.jar \
-          --aws-region region \
-          --thing-name MyGreengrassCore \
-          --thing-group-name MyGreengrassCoreGroup \
-          --thing-policy-name GreengrassV2IoTThingPolicy \
-          --tes-role-name GreengrassV2TokenExchangeRole \
-          --tes-role-alias-name GreengrassCoreTokenExchangeRoleAlias \
-          --component-default-user ggc_user:ggc_group \
-          --provision true \
-          --setup-system-service true       
-        ```
+3. Setup AWS IoT Greengrass [according to the installation instructions](https://docs.aws.amazon.com/greengrass/v2/developerguide/install-greengrass-core-v2.html):
 4. Log in as superuser and allow `ggc_user:ggc_group` to use Docker, [as per the Docker documentation](https://docs.docker.com/engine/install/linux-postinstall/):
    ```
     sudo su; sudo usermod -aG docker ggc_user; newgrp docker 
@@ -143,7 +126,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
    3. Note down the ARN of the secrets you just made.
 
 2. Authorize Greengrass to retrieve this secret using IAM:
-   1. Follow [the Greengrass documentation](:https://docs.aws.amazon.com/greengrass/v2/developerguide/device-service-role.html) to add authorization
+   1. Follow [the Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/device-service-role.html) to add authorization
    2. See the [`aws.greengrass.SecretManager` documentation for more information.](https://docs.aws.amazon.com/greengrass/v2/developerguide/secret-manager-component.html)
    3. Your policy should include `secretsmanager:GetSecretValue` for the secret you just created. 
     ```
@@ -300,7 +283,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 
 
 ## Resources
-* [AWS IoT Greengrass v2 Developer Guide](https://docs.aws.amazon.com/greengrass/v2/developerguide/what-is-iot-greengrass.html)
+* [AWS IoT Greengrass V2 Developer Guide](https://docs.aws.amazon.com/greengrass/v2/developerguide/what-is-iot-greengrass.html)
 * [Grafana Dockerhub](https://hub.docker.com/r/grafana/grafana)
 * [Grafana Docker Documentation](https://grafana.com/docs/grafana/latest/installation/docker/)
 * [Grafana Docker Image Configuration](https://grafana.com/docs/grafana/latest/administration/configure-docker/)
