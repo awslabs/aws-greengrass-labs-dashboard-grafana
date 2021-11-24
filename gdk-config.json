@@ -2,13 +2,13 @@
   "component" :{
     "aws.greengrass.labs.dashboard.Grafana": {
       "author": "AWS IoT Greengrass",
-      "version": "LATEST", 
+      "version": "NEXT_PATCH",
       "build": {
         "build_system": "zip"
       },
       "publish": {
-        "bucket": "<PLACEHOLDER BUCKET HERE>", 
-        "region": "<PLACEHOLDER BUCKET HERE>" 
+        "bucket": "<PLACEHOLDER BUCKET HERE>",
+        "region": "<PLACEHOLDER REGION HERE>"
       }
     }
   },
