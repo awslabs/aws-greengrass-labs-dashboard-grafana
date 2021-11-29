@@ -49,7 +49,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 
 * `GrafanaPort` -The port for the Grafana Docker container to bind to.
     *  (`string`)
-    * default: `8086`
+    * default: `3000`
 
 
 * `BridgeNetworkName` - The Docker bridge network to create and use for the Grafana Docker container.
@@ -84,7 +84,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 **The following steps are for Ubuntu 20.04 x86_64, but will be similar for most platforms.**
 
 ### Prerequisites
-1. Install dependencies.
+1. Install dependencies on the host machine.
     ```
    sudo apt-get update; sudo apt-get install -y \
      ca-certificates \
@@ -96,23 +96,29 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
      python3-pip; \
    python3 -m pip install awsiotsdk
     ```
-2. Install Docker using [the instructions for Ubuntu](https://docs.docker.com/engine/install/ubuntu/):
+2. Install Docker on the host machine using [the instructions for Ubuntu](https://docs.docker.com/engine/install/ubuntu/):
    ```
       echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \ $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
       sudo apt-get update
       sudo apt-get install -y docker-ce docker-ce-cli containerd.io
    ```
 
-3. Setup AWS IoT Greengrass [according to the installation instructions](https://docs.aws.amazon.com/greengrass/v2/developerguide/install-greengrass-core-v2.html):
-4. Log in as superuser and allow `ggc_user:ggc_group` to use Docker, [as per the Docker documentation](https://docs.docker.com/engine/install/linux-postinstall/):
+3. Setup AWS IoT Greengrass on the host machine [according to the installation instructions](https://docs.aws.amazon.com/greengrass/v2/developerguide/install-greengrass-core-v2.html):
+4. Log in as superuser with `sudo su` and then allow `ggc_user:ggc_group` to use Docker, [as per the Docker documentation](https://docs.docker.com/engine/install/linux-postinstall/):
    ```
-    sudo su; sudo usermod -aG docker ggc_user; newgrp docker 
+      sudo usermod -aG docker ggc_user; newgrp docker 
    ```
-
    Test your access with first `sudo su` and then `su - ggc_user -c "docker ps"`
 
 ### Component Setup
-1. Create an AWS Secrets Manager Secret to store your Grafana username/password.
+1. Install [the Greengrass Development Kit CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/install-greengrass-development-kit-cli.html) in your local workspace.
+   1. Run `python3 -m pip install git+https://github.com/aws-greengrass/aws-greengrass-gdk-cli.git`
+2. Pull down the component in a new directory using the GDK CLI.
+    ```
+    mkdir aws-greengrass-labs-dashboard-grafana; cd aws-greengrass-labs-dashboard-grafana
+    gdk component init --repository aws-greengrass-labs-dashboard-grafana
+    ```
+3. Create an AWS Secrets Manager Secret to store your Grafana username/password.
    1. Go to [AWS Secrets Manager](https://console.aws.amazon.com/secretsmanager/home?region=us-east-1#!/listSecrets):
    2. Create new secret → Other type of Secret → Plaintext. The secret you use should be in the following format:
       ```
@@ -125,7 +131,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 
    3. Note down the ARN of the secrets you just made.
 
-2. Authorize Greengrass to retrieve this secret using IAM:
+4. Authorize Greengrass to retrieve this secret using IAM:
    1. Follow [the Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/device-service-role.html) to add authorization
    2. See the [`aws.greengrass.SecretManager` documentation for more information.](https://docs.aws.amazon.com/greengrass/v2/developerguide/secret-manager-component.html)
    3. Your policy should include `secretsmanager:GetSecretValue` for the secret you just created. 
@@ -160,7 +166,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
       ]
       }
     ```
-3. Connect to InfluxDB or another data source
+5. Connect to InfluxDB or another data source
    1. In order to add a datasource, add your datasource file to the `src/datasources` folder. It will be mounted into `/etc/grafana/provisioning/datasources` inside the container for Grafana to automatically pick up.
       See the [Grafana documentation on adding data source files](https://grafana.com/docs/grafana/latest/administration/provisioning/#data-sources) for more information.
    2. First, you must create a new read-only token in order to connect to InfluxDB. Follow [the documentation here](https://github.com/awslabs/aws-greengrass-labs-database-influxdb/blob/development/README.md#influxdb-token-creation
@@ -204,15 +210,20 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
                   gD7L5zJLTpzdq23Y/3evLoE=
                   -----END PRIVATE KEY-----
           ```
-4. Create the component by following [the Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/develop-greengrass-components.html)
-   1. Use `zip -r aws-greengrass-labs-dashboard.grafana.zip src` to zip the `src` directory into the deployment artifact, and upload this to S3
-   2. Modify the `aws.greengrass.labs.dashboard.Grafana` recipe at `recipe.yaml`.
-      1. Replace the artifact URI `s3://aws-greengrass-labs-dashboard-grafana.zip` with your S3 path
+6. Create the component by following [the Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/develop-greengrass-components.html)
+   1. Modify the `aws.greengrass.labs.dashboard.Grafana` recipe at `recipe.yaml`.
       2. Replace the two occurrences of `'arn:aws:secretsmanager:<region>:<account>:secret:<name>'` with your created secret ARN.
-   3. (Optional) Specify a mount path. The default used will be `/home/ggc_user/dashboard`.
-      1. When specifying a mount path, note that this mount path will be used to store sensitive data, including secrets and certs used for Grafana auth. You are responsible for securing this directory on your device. Ensure that `ggc_user:ggc_group` has read/write/execute access to this directory with the following command: `namei -m <path>`.
-
-5. Create deployment via the CLI or AWS Console, from [Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/create-deployments.html). The following components should be configured in your deployment:
+      3. (Optional) Specify a mount path. The default used will be `/home/ggc_user/dashboard`.
+         3. When specifying a mount path, note that this mount path will be used to store sensitive data, including secrets and certs used for Grafana auth. You are responsible for securing this directory on your device. Ensure that `ggc_user:ggc_group` has read/write/execute access to this directory with the following command: `namei -m <path>`.
+   2. Use the [GDK CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/greengrass-development-kit-cli.html) to build the component to prepare for publishing.
+   ```
+   gdk component build
+   ```
+    4. Use the [GDK CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/greengrass-development-kit-cli.html) to create a private component.
+   ```
+   gdk component publish
+   ```
+7. Create deployment via the CLI or AWS Console, from [Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/create-deployments.html). The following components should be configured in your deployment:
    1. `aws.greengrass.SecretManager`:
    ```
    "cloudSecrets": [
@@ -227,7 +238,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
    ```
     If you are not using the `aws.greengrass.labs.database.InfluxDB` component, you can remove the InfluxDB secret arn from the above.
 
-6. View the component logs at `/greengrass/v2/logs/aws.greengrass.labs.dashboard.Grafana.log`. 
+8. View the component logs at `/greengrass/v2/logs/aws.greengrass.labs.dashboard.Grafana.log`. 
     1. If correctly set up, you will see the messages `Grafana is running on port 3000` and `msg="HTTP Server Listen"`, and see logs from Grafana as it runs.
     2. You can also run `curl -k https://localhost:3000/api/health` to check the status:
     ```
@@ -238,11 +249,11 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
     }
     ```
 
-7. If you would like to forward the port from a remote machine, ssh in with the following command to forward the port:
+9. If you would like to forward the port from a remote machine, ssh in with the following command to forward the port:
    `ssh -L 3000:localhost:3000 ubuntu@<IP address>`
-8. Visit `https://localhost:3000` to view Grafana, and login with your username and password.
-9. If using self-signed certificates (the default), you will either need to add trust for these certificates, or possibly use your browser's incognito mode.
-   Please see the Troubleshooting section to resolve any issues you may encounter.
+10. Visit `https://localhost:3000` to view Grafana, and login with your username and password.
+11. If using self-signed certificates (the default), you will either need to add trust for these certificates, or possibly use your browser's incognito mode.
+    Please see the Troubleshooting section to resolve any issues you may encounter.
 
 
 ## Component Lifecycle Management
@@ -284,6 +295,8 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 
 ## Resources
 * [AWS IoT Greengrass V2 Developer Guide](https://docs.aws.amazon.com/greengrass/v2/developerguide/what-is-iot-greengrass.html)
+* [AWS IoT Greengrass V2 Community Components](https://docs.aws.amazon.com/greengrass/v2/developerguide/greengrass-software-catalog.html)
+* [AWS IoT Greengrass Development Kit CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/greengrass-development-kit-cli.html)
 * [Grafana Dockerhub](https://hub.docker.com/r/grafana/grafana)
 * [Grafana Docker Documentation](https://grafana.com/docs/grafana/latest/installation/docker/)
 * [Grafana Docker Image Configuration](https://grafana.com/docs/grafana/latest/administration/configure-docker/)
