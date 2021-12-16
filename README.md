@@ -1,3 +1,4 @@
+
 ## Greengrass Labs Grafana Component - `aws.greengrass.labs.dashboard.Grafana`
 
 ## Overview
@@ -13,9 +14,12 @@ At a high level, the component will do the following:
 6. Load in a premade dashboard to render Greengrass telemetry.
 
 
-This component works with the `aws.greengrass.labs.telemetry.InfluxDBPublisher` and `aws.greengrass.labs.database.InfluxDB` components to persist and visualize Greengrass System Telemetry data, but can be used on its own or as a primitive for any application.
+This component works with the `aws.greengrass.labs.dashboard.GreengrassDashboard`<TODO>, `aws.greengrass.labs.telemetry.InfluxDBPublisher` and `aws.greengrass.labs.database.InfluxDB` components to persist and visualize Greengrass System Telemetry data, but can be used on its own or as a primitive for any application.
+
+The `aws.greengrass.labs.dashboard.GreengrassDashboard` TODO component automates the setup of Grafana with InfluxDB to provide a "one-click" experience, but this component still needs to be configured first before creation. See the `Setup` section below for instructions.
 * [aws.greengrass.labs.telemetry.InfluxDBPublisher](https://github.com/awslabs/aws-greengrass-labs-telemetry-influxdbpublisher)
 * [aws.greengrass.labs.database.InfluxDB](https://github.com/awslabs/aws-greengrass-labs-database-influxdb)
+* `aws.greengrass.labs.dashboard.GreengrassDashboard` TODO
 
 ![Architecture - Component](images/grafana.png)
 
@@ -40,7 +44,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 * `GrafanaContainerName` - The name of the Grafana Docker container.
     * (`string`)
     * default:  `greengrass_Grafana`
-    
+
 
 * `GrafanaInterface` - The IP for the Grafana container to bind on.
     * (`string`)
@@ -78,7 +82,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 
 
 * `accessControl` - [Greengrass Access Control Policy](https://docs.aws.amazon.com/greengrass/v2/developerguide/interprocess-communication.html#ipc-authorization-policies), required for secret retrieval.
-  * A incomplete `accessControl` policy allowing secret retrieval has been included, which you will need to configure.
+    * A incomplete `accessControl` policy allowing secret retrieval has been included, which you will need to configure.
 
 ## Setup
 **The following steps are for Ubuntu 20.04 x86_64, but will be similar for most platforms.**
@@ -112,29 +116,29 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 
 ### Component Setup
 1. Install [the Greengrass Development Kit CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/install-greengrass-development-kit-cli.html) in your local workspace.
-   1. Run `python3 -m pip install git+https://github.com/aws-greengrass/aws-greengrass-gdk-cli.git`
+    1. Run `python3 -m pip install git+https://github.com/aws-greengrass/aws-greengrass-gdk-cli.git`
 2. Pull down the component in a new directory using the GDK CLI.
     ```
     mkdir aws-greengrass-labs-dashboard-grafana; cd aws-greengrass-labs-dashboard-grafana
     gdk component init --repository aws-greengrass-labs-dashboard-grafana
     ```
 3. Create an AWS Secrets Manager Secret to store your Grafana username/password.
-   1. Go to [AWS Secrets Manager](https://console.aws.amazon.com/secretsmanager/home?region=us-east-1#!/listSecrets):
-   2. Create new secret → Other type of Secret → Plaintext. The secret you use should be in the following format:
-      ```
-      {
-       "grafana_username": "myGrafanaDBUsername",
-       "grafana_password": "myGrafanaPassword123!"
-      }
-      ```
-      Note that your password **must** be at least 16 characters long and must include uppercase and lowercase letters, numbers, and special characters.
+    1. Go to [AWS Secrets Manager](https://console.aws.amazon.com/secretsmanager/home?region=us-east-1#!/listSecrets):
+    2. Create new secret → Other type of Secret → Plaintext. The secret you use should be in the following format:
+       ```
+       {
+        "grafana_username": "myGrafanaDBUsername",
+        "grafana_password": "myGrafanaPassword123!"
+       }
+       ```
+       Note that your password **must** be at least 16 characters long and must include uppercase and lowercase letters, numbers, and special characters.
 
-   3. Note down the ARN of the secrets you just made.
+    3. Note down the ARN of the secrets you just made.
 
 4. Authorize Greengrass to retrieve this secret using IAM:
-   1. Follow [the Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/device-service-role.html) to add authorization
-   2. See the [`aws.greengrass.SecretManager` documentation for more information.](https://docs.aws.amazon.com/greengrass/v2/developerguide/secret-manager-component.html)
-   3. Your policy should include `secretsmanager:GetSecretValue` for the secret you just created. 
+    1. Follow [the Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/device-service-role.html) to add authorization
+    2. See the [`aws.greengrass.SecretManager` documentation for more information.](https://docs.aws.amazon.com/greengrass/v2/developerguide/secret-manager-component.html)
+    3. Your policy should include `secretsmanager:GetSecretValue` for the secret you just created.
     ```
         {
         "Version": "2012-10-17",
@@ -149,7 +153,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
         ]
     }
     ```
-   4. If you already have a similar policy attached for `aws.greengrass.labs.database.InfluxDB`, you can just add this new ARN as follows:
+    4. If you already have a similar policy attached for `aws.greengrass.labs.database.InfluxDB`, you can just add this new ARN as follows:
     ```
     {
       "Version": "2012-10-17",
@@ -166,107 +170,136 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
       ]
       }
     ```
-5. Connect to InfluxDB or another data source
-   1. In order to add a datasource, add your datasource file to the `src/datasources` folder. It will be mounted into `/etc/grafana/provisioning/datasources` inside the container for Grafana to automatically pick up.
-      See the [Grafana documentation on adding data source files](https://grafana.com/docs/grafana/latest/administration/provisioning/#data-sources) for more information.
-   2. First, you must create a new read-only token in order to connect to InfluxDB. Follow [the documentation here](https://github.com/awslabs/aws-greengrass-labs-database-influxdb/blob/development/README.md#influxdb-token-creation
-       ) to create one.
-   3. We provide two datasource file templates for you to use to connect to InfluxDB. Use the appropriate file, depending on whether your InfluxDB instance uses http or https.
-      * `influxdb-datasource_http.yaml`
-        * Replace `$GREENGRASS_INFLUXDB_TOKEN` with your retrieved token.
-      * `influxdb-datasource_https.yaml`
-        * Replace `$GREENGRASS_INFLUXDB_TOKEN` with your retrieved token.
-        * Replace `$TLS_CLIENT_CERT` with the contents of the InfluxDB .cert file present at `{configuration:/InfluxDBMountPath}/influxdb2_certs/influxdb.crt`
-        * Replace `$TLS_CLIENT_KEY` with the contents of the InfluxDB .key file present at `{configuration:/InfluxDBMountPath}/influxdb2_certs/influxdb.key`
-        * It should look something like this:
-        ```
-        apiVersion: 1
 
-        datasources:
-         - name: InfluxDB
-          type: influxdb
-          access: proxy
-          url: https://greengrass_influxDB:8086
-          editable: false
-          jsonData:
-              version: Flux
-              organization: greengrass
-              defaultBucket: greengrass-telemetry
-              tlsSkipVerify: true
-              tlsAuth: true
-              serverName: https://greengrass_influxDB:8086
-          secureJsonData:
-              token: T6ir...jAAXAtqPl7w==
-              tlsClientCert: |
-                  -----BEGIN CERTIFICATE-----
-                  MIIDazCCAlOgAwIBAgIUQtaacB3co2urJuMXHWUFYMEOvBMwDQYJKoZIhvcNAQEL
-                  ...
-                  4rHbn4WW6iedZQOl7WYx
-                  -----END CERTIFICATE-----
-              tlsClientKey: |
-                  -----BEGIN PRIVATE KEY-----
-                  MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDWUylAfubs0oJl
-                  ...
-                  gD7L5zJLTpzdq23Y/3evLoE=
-                  -----END PRIVATE KEY-----
-          ```
-6. Create the component by following [the Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/develop-greengrass-components.html)
-   1. Modify the `aws.greengrass.labs.dashboard.Grafana` recipe at `recipe.yaml`.
-      2. Replace the two occurrences of `'arn:aws:secretsmanager:<region>:<account>:secret:<name>'` with your created secret ARN.
-      3. (Optional) Specify a mount path. The default used will be `/home/ggc_user/dashboard`.
-         3. When specifying a mount path, note that this mount path will be used to store sensitive data, including secrets and certs used for Grafana auth. You are responsible for securing this directory on your device. Ensure that `ggc_user:ggc_group` has read/write/execute access to this directory with the following command: `namei -m <path>`.
-   2. Use the [GDK CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/greengrass-development-kit-cli.html) to build the component to prepare for publishing.
-   ```
-   gdk component build
-   ```
-    4. Use the [GDK CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/greengrass-development-kit-cli.html) to create a private component.
-   ```
-   gdk component publish
-   ```
-7. Create deployment via the CLI or AWS Console, from [Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/create-deployments.html). The following components should be configured in your deployment:
-   1. `aws.greengrass.SecretManager`:
-   ```
-   "cloudSecrets": [
-      {
-        "arn": "<influxDB secret arn>"
-      },
-      {
-        "arn": "<grafana secreet arn>"
-      }
-    ]
-   ]
-   ```
+5. (OPTIONAL) Connect to InfluxDB or another data source
+
+   TODO If you would like to have Grafana connect to InfluxDB automatically, you should skip this step and use the `aws.greengrass.labs.dashboard.GreengrassDashboard` <link> component, which automates setup to provide a "one-click" experience.
+
+
+	  If you would like to manually add a datasource via a mount, you can do so as follows. The following example is for InfluxDB. 
+   
+
+	  In order to add a datasource, add your datasource file to the `src/datasources` folder. It will be mounted into `/etc/grafana/provisioning/datasources` inside the container for Grafana to automatically pick up.
+	  See the [Grafana documentation on adding data source files](https://grafana.com/docs/grafana/latest/administration/provisioning/#data-sources) for more information.
+	  1. First, you must create a new read-only token in order to connect to InfluxDB. Follow [the documentation here](https://github.com/awslabs/aws-greengrass-labs-database-influxdb/blob/development/README.md#influxdb-token-creation) to create one.
+	     1. We provide two datasource file templates for you to use to connect to InfluxDB. Use the appropriate file, depending on whether your InfluxDB instance uses http or https.
+	        * `influxdb-datasource_http.yaml.template`
+	          * Replace `$GREENGRASS_INFLUXDB_TOKEN` with your retrieved token.
+	          * Rename the file to `influxdb-datasource_http.yaml`
+	        * `influxdb-datasource_https.yaml.template`
+	          * Replace `$GREENGRASS_INFLUXDB_TOKEN` with your retrieved token.
+	          * Replace `$TLS_CLIENT_CERT` with the contents of the InfluxDB .cert file present at `{configuration:/InfluxDBMountPath}/influxdb2_certs/influxdb.crt`
+	          * Replace `$TLS_CLIENT_KEY` with the contents of the InfluxDB .key file present at `{configuration:/InfluxDBMountPath}/influxdb2_certs/influxdb.key`
+	          * Rename the file to `influxdb-datasource_https.yaml`
+	          * It should look something like this:
+
+	          ```
+	          apiVersion: 1
+
+	          datasources:
+	           - name: InfluxDB
+	            type: influxdb
+	            access: proxy
+	            url: https://greengrass_influxDB:8086
+	            editable: false
+	            jsonData:
+	                version: Flux
+	                organization: greengrass
+	                defaultBucket: greengrass-telemetry
+	                tlsSkipVerify: true
+	                tlsAuth: true
+	                serverName: https://greengrass_influxDB:8086
+	            secureJsonData:
+	                token: T6ir...jAAXAtqPl7w==
+	                tlsClientCert: |
+	                    -----BEGIN CERTIFICATE-----
+	                    MIIDazCCAlOgAwIBAgIUQtaacB3co2urJuMXHWUFYMEOvBMwDQYJKoZIhvcNAQEL
+	                    ...
+	                    4rHbn4WW6iedZQOl7WYx
+	                    -----END CERTIFICATE-----
+	                tlsClientKey: |
+	                    -----BEGIN PRIVATE KEY-----
+	                    MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDWUylAfubs0oJl
+	                    ...
+	                    gD7L5zJLTpzdq23Y/3evLoE=
+	                    -----END PRIVATE KEY-----
+	            ```
+
+6. Create the component:
+    1. (OPTIONAL) Modify the `aws.greengrass.labs.dashboard.Grafana` recipe at `recipe.yaml`. NOTE: if you would like to specify this configuration during deployment, you can also specify this configuration during a deployment (see Step 7).
+    2. Replace the two occurrences of `'arn:aws:secretsmanager:region:account:secret:name'` with your created secret ARN, including in the `accessControl` policy.
+        1. (Optional) Specify a mount path. The default used will be `/home/ggc_user/dashboard`.
+            1. When specifying a mount path, note that this mount path will be used to store sensitive data, including secrets and certs used for Grafana auth. You are responsible for securing this directory on your device. Ensure that `ggc_user:ggc_group` has read/write/execute access to this directory with the following command: `namei -m <path>`.
+    3. Use the [GDK CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/greengrass-development-kit-cli.html) to build the component to prepare for publishing.
+       ```
+       gdk component build
+       ```
+       4. Use the [GDK CLI](https://docs.aws.amazon.com/greengrass/v2/developerguide/greengrass-development-kit-cli.html) to create a private component.
+       ```
+       gdk component publish
+       ```
+7.  Create deployment via the CLI or AWS Console, from [Greengrass documentation](https://docs.aws.amazon.com/greengrass/v2/developerguide/create-deployments.html). The following components should be configured in your deployment:
+    1. `aws.greengrass.SecretManager`:
+     ```
+     "cloudSecrets": [
+        {
+          "arn": "<influxDB secret arn>"
+        },
+        {
+          "arn": "<grafana secreet arn>"
+        }
+      ]
+     ]
+     ```
     If you are not using the `aws.greengrass.labs.database.InfluxDB` component, you can remove the InfluxDB secret arn from the above.
-
-8. View the component logs at `/greengrass/v2/logs/aws.greengrass.labs.dashboard.Grafana.log`. 
-    1. If correctly set up, you will see the messages `Grafana is running on port 3000` and `msg="HTTP Server Listen"`, and see logs from Grafana as it runs.
-    2. You can also run `curl -k https://localhost:3000/api/health` to check the status:
+    2. If you would like to specify your mount path/Secret Arn/Access Control during deployment instead, ***you must first remove the entire accessControl section from the recipe.yaml file before you create the component***. Then, make sure to merge in the following configuration to your component configuration during deployment. Note that specifying a non-default mount path is optional, and omitting it will result in the component using `/home/ggc_user/dashboard` instead.
     ```
     {
-    "commit": "d7f71e9eae",
-    "database": "ok",
-    "version": "8.2.0"
-    }
+         "GrafanaMountPath": "<Your mount path>" (Optional)
+         SecretArn: "<Your secret ARN>"
+         "accessControl": {
+            "aws.greengrass.SecretManager": {
+              "aws.greengrass.labs.dashboard.Grafana:secrets:1": {
+                "operations": [
+                  "aws.greengrass#GetSecretValue"
+                ],
+                "policyDescription": "Allows access to the secret containing Grafana credentials.",
+                "resources": [
+                  "arn:aws:secretsmanager:region:account:secret:name"
+                ]
+              }
+         }
+     }
     ```
+4. View the component logs at `/greengrass/v2/logs/aws.greengrass.labs.dashboard.Grafana.log`.
+    1. If correctly set up, you will see the messages `Grafana is running on port 3000` and `msg="HTTP Server Listen"`, and see logs from Grafana as it runs.
+    2. You can also run `curl -k https://localhost:3000/api/health` to check the status:
+   ```
+      {
+      "commit": "d7f71e9eae",
+      "database": "ok",
+      "version": "8.2.0"
+      }
+      ```
 
-9. If you would like to forward the port from a remote machine, ssh in with the following command to forward the port:
+5. If you would like to forward the port from a remote machine, ssh in with the following command to forward the port:
    `ssh -L 3000:localhost:3000 ubuntu@<IP address>`
-10. Visit `https://localhost:3000` to view Grafana, and login with your username and password.
-11. If using self-signed certificates (the default), you will either need to add trust for these certificates, or possibly use your browser's incognito mode.
-    Please see the Troubleshooting section to resolve any issues you may encounter.
+6. Visit `https://localhost:3000` to view Grafana, and login with your username and password.
+7. If using self-signed certificates (the default), you will either need to add trust for these certificates, or possibly use your browser's incognito mode.
+   Please see the Troubleshooting section to resolve any issues you may encounter.
 
 
 ## Component Lifecycle Management
 * Grafana data will be persisted between container restarts and removals since it is mounted to the location of your choice on your host machine.
 * Upon start, by default the component will look for the following and create them if they are not present:
-  * The docker bridge network `greengrass-telemetry-bridge`
-  * The directory `{configuration:/GrafanaMountPath}/grafana_certs` along with a `.cert` and `.key` file for HTTPS
-    * By default, this directory has file permissions set to `077` for maximum compatability. [You are responsible for securing file permission on your device](https://docs.aws.amazon.com/greengrass/v2/developerguide/encryption-at-rest.html), and we would recommend scoping these permissions down to fit your use case.
-  * The directories 
-    * `{configuration:/GrafanaMountPath}/grafana` to store Grafana data 
-    * `{configuration:/GrafanaMountPath}/greengrass_grafana_secrets` to store the retrieved Grafana secrets from AWS Secrets Manager.
-  * See more information on [the Grafana Dockerhub page](https://hub.docker.com/r/grafana/grafana)
-* You are free to modify and create more Grafana dashboards as needed to load in. 
+    * The docker bridge network `greengrass-telemetry-bridge`
+    * The directory `{configuration:/GrafanaMountPath}/grafana_certs` along with a `.cert` and `.key` file for HTTPS
+        * By default, this directory has file permissions set to `077` for maximum compatability. [You are responsible for securing file permission on your device](https://docs.aws.amazon.com/greengrass/v2/developerguide/encryption-at-rest.html), and we would recommend scoping these permissions down to fit your use case.
+    * The directories
+        * `{configuration:/GrafanaMountPath}/grafana` to store Grafana data
+        * `{configuration:/GrafanaMountPath}/greengrass_grafana_secrets` to store the retrieved Grafana secrets from AWS Secrets Manager.
+    * See more information on [the Grafana Dockerhub page](https://hub.docker.com/r/grafana/grafana)
+* You are free to modify and create more Grafana dashboards as needed to load in.
 
 ## Networking
 * Please see the [Grafana Configuration Options](https://grafana.com/docs/grafana/latest/administration/configuration/) for a full list of networking options.
@@ -279,11 +312,11 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 * Greengrass does not manage or distribute the Grafana Docker image referenced in this Greengrass component. You are responsible for securing Docker containers on your device and ensuring it does not contain vulnerabilities or security risks.
 * HTTPS support is turned on by default; if you would like to use only HTTP, set `ServerProtocol` to `http` in the component configuration.
 
-* Consider using [Docker secrets](https://docs.docker.com/engine/swarm/secrets/) with Grafana as directed in the [Grafana documentation](https://grafana.com/docs/grafana/latest/administration/configure-docker/#configure-grafana-with-docker-secrets). 
-  * The component will expect Grafana secrets to be present at 
-    * `{configuration:/GrafanaMountPath}/greengrass_grafana_secrets/admin_password` and 
-    * `{configuration:/GrafanaMountPath}/greengrass_grafana_secrets/admin_username` 
-  * Additional secrets for datasources are expected at `{artifacts:decompressedPath}/aws-greengrass-labs-dashboard-grafana/src/datasources`.
+* Consider using [Docker secrets](https://docs.docker.com/engine/swarm/secrets/) with Grafana as directed in the [Grafana documentation](https://grafana.com/docs/grafana/latest/administration/configure-docker/#configure-grafana-with-docker-secrets).
+    * The component will expect Grafana secrets to be present at
+        * `{configuration:/GrafanaMountPath}/greengrass_grafana_secrets/admin_password` and
+        * `{configuration:/GrafanaMountPath}/greengrass_grafana_secrets/admin_username`
+    * Additional secrets for datasources are expected at `{artifacts:decompressedPath}/aws-greengrass-labs-dashboard-grafana/src/datasources`.
 
 ## Certificate Management and Expiry
 * This component by default generates self-signed certificates to use for TLS encryption. We would recommend you sign your certificates with a Certificate Authority .
@@ -313,24 +346,24 @@ This project is licensed under the Apache-2.0 License.
 
 ## Troubleshooting
 *
-  ```
-  Could not import awsiot
-  ```
-    Ensure that `ggc_user` can import this Python library by running first `sudo su` and then `su - ggc_user -c "python3 -c 'import awsiot'"`
+```
+Could not import awsiot
+```
+Ensure that `ggc_user` can import this Python library by running first `sudo su` and then `su - ggc_user -c "python3 -c 'import awsiot'"`
 *
-  ```
-  mkdir: Operation not permitted
-  ```
-    Ensure that your mount path has sufficient permission to create and mount directories into the container. If necessary, you can use `RequiresPrivilege: true` in the component recipe's lifecycle to run as root, although this is not recommended.
+```
+mkdir: Operation not permitted
+```
+Ensure that your mount path has sufficient permission to create and mount directories into the container. If necessary, you can use `RequiresPrivilege: true` in the component recipe's lifecycle to run as root, although this is not recommended.
 *
-  ```
-  stdout. You may have issues with file permissions, more information here: http://docs.grafana.org/installation/docker/#migrate-to-v51-or-later. 
-  stdout. mkdir: can't create directory '/var/lib/grafana/plugins': Permission denied.
-  ```
-    Ensure that your mount path has sufficient permission to create and mount directories into the container. If necessary, you can use `RequiresPrivilege: true` in the component recipe's lifecycle to run as root, although this is not recommended.
+```
+stdout. You may have issues with file permissions, more information here: http://docs.grafana.org/installation/docker/#migrate-to-v51-or-later. 
+stdout. mkdir: can't create directory '/var/lib/grafana/plugins': Permission denied.
+```
+Ensure that your mount path has sufficient permission to create and mount directories into the container. If necessary, you can use `RequiresPrivilege: true` in the component recipe's lifecycle to run as root, although this is not recommended.
 *
-  ```
-  aws.greengrass.labs.dashboard.Grafana: stdout. *api.HTTPServer run error: open /var/lib/grafana/ssl/greengrass/grafana.crt: permission denied.
+```
+aws.greengrass.labs.dashboard.Grafana: stdout. *api.HTTPServer run error: open /var/lib/grafana/ssl/greengrass/grafana.crt: permission denied.
 
-  ```
-    Docker/grafana cannot access the mounted https cert/key Ensure that your mount path has sufficient permission to create and mount directories into the container.
+```
+Docker/grafana cannot access the mounted https cert/key Ensure that your mount path has sufficient permission to create and mount directories into the container.
