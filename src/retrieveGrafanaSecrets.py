@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-import concurrent.futures
 import json
 import logging
 from argparse import Namespace
@@ -50,24 +49,26 @@ def get_secret_over_ipc(secret_arn) -> str:
         operation = ipc_client.new_get_secret_value()
         operation.activate(request)
         futureResponse = operation.get_response()
-        try:
-            response = futureResponse.result(TIMEOUT)
-            return response.secret_value.secret_string
-        except concurrent.futures.TimeoutError as e:
-            logging.error("Timeout occurred while getting secret: {}".format(secret_arn), exc_info=True)
-            raise e
-        except UnauthorizedError as e:
-            logging.error("Unauthorized error while getting secret: {}".format(secret_arn), exc_info=True)
-            raise e
-        except Exception as e:
-            logging.error("Exception while getting secret: {}".format(secret_arn), exc_info=True)
-            raise e
-    except Exception:
-        logging.error("Exception occurred when using IPC.", exc_info=True)
-        exit(1)
+        response = futureResponse.result(TIMEOUT)
+        return response.secret_value.secret_string
+    except TimeoutError as e:
+        logging.error("Timeout occurred while getting secret: {}".format(secret_arn), exc_info=True)
+        raise e
+    except UnauthorizedError as e:
+        logging.error("Unauthorized error while getting secret: {}".format(secret_arn), exc_info=True)
+        raise e
+    except Exception as e:
+        logging.error("Exception while getting secret: {}".format(secret_arn), exc_info=True)
+        raise e
 
 
 def retrieve_secret(secret_arn):
+    """
+    Get Secret Arn.
+    :param secret_arn: the AWS Secret Manager secret ARN
+    :return: the secrets as "<username> <password>"
+    """
+
     try:
         response = get_secret_over_ipc(secret_arn)
         secret_json = json.loads(response)

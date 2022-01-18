@@ -1,7 +1,7 @@
 ---
 RecipeFormatVersion: '2020-01-25'
 ComponentName: aws.greengrass.labs.dashboard.Grafana
-ComponentVersion: '1.0.0'
+ComponentVersion: '1.1.0'
 ComponentDescription: 'A component that provisions and manages an Grafana instance.'
 ComponentPublisher: Amazon
 ComponentDependencies:
@@ -14,7 +14,7 @@ ComponentDependencies:
 ComponentConfiguration:
   DefaultConfiguration:
     AutoProvision: 'true'
-    SecretArn: 'arn:aws:secretsmanager:<region>:<account>:secret:<name>'
+    SecretArn: 'arn:aws:secretsmanager:region:account:secret:name'
     GrafanaMountPath: '/home/ggc_user/dashboard'
     GrafanaContainerName: greengrass_Grafana
     GrafanaInterface: '127.0.0.1'
@@ -31,7 +31,7 @@ ComponentConfiguration:
           operations:
             - aws.greengrass#GetSecretValue
           resources:
-            - 'arn:aws:secretsmanager:<region>:<account>:secret:<name>'
+            - 'arn:aws:secretsmanager:region:account:secret:name'
 Manifests:
   - Platform:
       os: /darwin|linux/
