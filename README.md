@@ -13,13 +13,11 @@ At a high level, the component will do the following:
 5. Load in a specified data source (the default provided is InfluxDB).
 6. Load in a premade dashboard to render Greengrass telemetry.
 
+This component works with the `aws.greengrass.labs.dashboard.InfluxDBGrafana`, `aws.greengrass.labs.telemetry.InfluxDBPublisher` and `aws.greengrass.labs.database.InfluxDB` components to persist and visualize Greengrass System Telemetry data, but can be used on its own or as a primitive for any application.
 
-This component works with the `aws.greengrass.labs.dashboard.GreengrassDashboard`<TODO>, `aws.greengrass.labs.telemetry.InfluxDBPublisher` and `aws.greengrass.labs.database.InfluxDB` components to persist and visualize Greengrass System Telemetry data, but can be used on its own or as a primitive for any application.
-
-The `aws.greengrass.labs.dashboard.GreengrassDashboard` TODO component automates the setup of Grafana with InfluxDB to provide a "one-click" experience, but this component still needs to be configured first before creation. See the `Setup` section below for instructions.
 * [aws.greengrass.labs.telemetry.InfluxDBPublisher](https://github.com/awslabs/aws-greengrass-labs-telemetry-influxdbpublisher)
 * [aws.greengrass.labs.database.InfluxDB](https://github.com/awslabs/aws-greengrass-labs-database-influxdb)
-* `aws.greengrass.labs.dashboard.GreengrassDashboard` TODO
+* [aws.greengrass.labs.dashboard.InfluxDBGrafana](https://github.com/awslabs/aws-greengrass-labs-dashboard-influxdb-grafana)
 
 ![Architecture - Component](images/grafana.png)
 
@@ -173,8 +171,7 @@ The `aws.greengrass.labs.dashboard.Grafana` component supports the following con
 
 5. (OPTIONAL) Connect to InfluxDB or another data source
 
-   TODO If you would like to have Grafana connect to InfluxDB automatically, you should skip this step and use the `aws.greengrass.labs.dashboard.GreengrassDashboard` <link> component, which automates setup to provide a "one-click" experience.
-
+    If you would like to have Grafana connect to InfluxDB automatically, you should skip this step and use the [aws.greengrass.labs.dashboard.InfluxDBGrafana]([aws.greengrass.labs.dashboard.InfluxDBGrafana](https://github.com/awslabs/aws-greengrass-labs-dashboard-influxdb-grafana)) component, which automates setup to provide a "one-click" experience.
 
 	  If you would like to manually add a datasource via a mount, you can do so as follows. The following example is for InfluxDB. 
    
